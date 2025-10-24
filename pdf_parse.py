@@ -16,7 +16,7 @@ def process_layout_results(layout_results: List[dict]) -> List[dict]:
         处理后的结果列表
     """
     # 初始化OCR引擎（只需要中文和英文）
-    ocr = PaddleOCR(use_angle_cls=True, lang="ch")
+    ocr = PaddleOCR(use_angle_cls=False, lang="en")
 
     processed_results = []
 
