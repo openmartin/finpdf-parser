@@ -2,7 +2,191 @@ import pymupdf  # PyMuPDF
 import os
 import json
 from typing import List
-from paddleocr import LayoutDetection
+from paddleocr import LayoutDetection, PaddleOCR
+
+
+def process_layout_regions(image_path: str, layout_boxes: List[dict]) -> List[dict]:
+    """
+    根据版面识别结果，对不同类型的区域进行相应处理
+
+    Args:
+        image_path: 图片文件路径
+        layout_boxes: 版面识别的boxes结果
+
+    Returns:
+        处理后的结果列表
+    """
+    # 初始化OCR引擎（只需要中文和英文）
+    ocr = PaddleOCR(use_angle_cls=True, lang="ch")
+
+    processed_results = []
+
+    for box_info in layout_boxes:
+        label = box_info['label']
+        coordinate = box_info['coordinate']
+
+        result = {
+            'label': label,
+            'coordinate': coordinate,
+            'score': box_info['score']
+        }
+
+        # 根据不同类型进行处理
+        if label == 'text':
+            # 对文本区域进行OCR识别
+            try:
+                # 提取区域坐标
+                x1, y1, x2, y2 = coordinate
+
+                # 使用PaddleOCR进行文本识别
+                ocr_result = ocr.ocr(image_path, det=True, rec=True, cls=True)
+
+                # 筛选出在当前区域内的文本
+                region_texts = []
+                if ocr_result and ocr_result[0]:
+                    for line in ocr_result[0]:
+                        if len(line) >= 2:
+                            # 获取文本框坐标
+                            text_box = line[0]
+                            text_content = line[1][0] if line[1] else ""
+
+                            # 计算文本框中心点
+                            box_center_x = sum(point[0] for point in text_box) / 4
+                            box_center_y = sum(point[1] for point in text_box) / 4
+
+                            # 检查文本是否在当前区域内
+                            if (x1 <= box_center_x <= x2 and y1 <= box_center_y <= y2):
+                                region_texts.append(text_content)
+
+                result['text_content'] = ' '.join(region_texts) if region_texts else ""
+                print(f"文本区域OCR识别完成，识别到 {len(region_texts)} 个文本片段")
+
+            except Exception as e:
+                print(f"OCR识别失败: {e}")
+                result['text_content'] = ""
+
+        elif label == 'doc_title':
+            # 文档标题也进行OCR识别
+            try:
+                x1, y1, x2, y2 = coordinate
+                ocr_result = ocr.ocr(image_path, det=True, rec=True, cls=True)
+
+                region_texts = []
+                if ocr_result and ocr_result[0]:
+                    for line in ocr_result[0]:
+                        if len(line) >= 2:
+                            text_box = line[0]
+                            text_content = line[1][0] if line[1] else ""
+
+                            box_center_x = sum(point[0] for point in text_box) / 4
+                            box_center_y = sum(point[1] for point in text_box) / 4
+
+                            if (x1 <= box_center_x <= x2 and y1 <= box_center_y <= y2):
+                                region_texts.append(text_content)
+
+                result['text_content'] = ' '.join(region_texts) if region_texts else ""
+                print(f"标题区域OCR识别完成")
+
+            except Exception as e:
+                print(f"标题OCR识别失败: {e}")
+                result['text_content'] = ""
+
+        elif label == 'paragraph_title':
+            # 段落标题进行OCR识别
+            try:
+                x1, y1, x2, y2 = coordinate
+                ocr_result = ocr.ocr(image_path, det=True, rec=True, cls=True)
+
+                region_texts = []
+                if ocr_result and ocr_result[0]:
+                    for line in ocr_result[0]:
+                        if len(line) >= 2:
+                            text_box = line[0]
+                            text_content = line[1][0] if line[1] else ""
+
+                            box_center_x = sum(point[0] for point in text_box) / 4
+                            box_center_y = sum(point[1] for point in text_box) / 4
+
+                            if (x1 <= box_center_x <= x2 and y1 <= box_center_y <= y2):
+                                region_texts.append(text_content)
+
+                result['text_content'] = ' '.join(region_texts) if region_texts else ""
+                print(f"段落标题OCR识别完成")
+
+            except Exception as e:
+                print(f"段落标题OCR识别失败: {e}")
+                result['text_content'] = ""
+
+        elif label == 'table':
+            # 表格区域暂时只标记，后续可以添加专门的表格识别
+            result['note'] = "表格区域，需要专门的表格识别处理"
+            print("检测到表格区域")
+
+        elif label == 'figure':
+            # 图片区域
+            result['note'] = "图片区域"
+            print("检测到图片区域")
+
+        elif label == 'figure_title':
+            # 图片标题进行OCR识别
+            try:
+                x1, y1, x2, y2 = coordinate
+                ocr_result = ocr.ocr(image_path, det=True, rec=True, cls=True)
+
+                region_texts = []
+                if ocr_result and ocr_result[0]:
+                    for line in ocr_result[0]:
+                        if len(line) >= 2:
+                            text_box = line[0]
+                            text_content = line[1][0] if line[1] else ""
+
+                            box_center_x = sum(point[0] for point in text_box) / 4
+                            box_center_y = sum(point[1] for point in text_box) / 4
+
+                            if (x1 <= box_center_x <= x2 and y1 <= box_center_y <= y2):
+                                region_texts.append(text_content)
+
+                result['text_content'] = ' '.join(region_texts) if region_texts else ""
+                print(f"图片标题OCR识别完成")
+
+            except Exception as e:
+                print(f"图片标题OCR识别失败: {e}")
+                result['text_content'] = ""
+
+        elif label == 'vision_footnote':
+            # 脚注进行OCR识别
+            try:
+                x1, y1, x2, y2 = coordinate
+                ocr_result = ocr.ocr(image_path, det=True, rec=True, cls=True)
+
+                region_texts = []
+                if ocr_result and ocr_result[0]:
+                    for line in ocr_result[0]:
+                        if len(line) >= 2:
+                            text_box = line[0]
+                            text_content = line[1][0] if line[1] else ""
+
+                            box_center_x = sum(point[0] for point in text_box) / 4
+                            box_center_y = sum(point[1] for point in text_box) / 4
+
+                            if (x1 <= box_center_x <= x2 and y1 <= box_center_y <= y2):
+                                region_texts.append(text_content)
+
+                result['text_content'] = ' '.join(region_texts) if region_texts else ""
+                print(f"脚注OCR识别完成")
+
+            except Exception as e:
+                print(f"脚注OCR识别失败: {e}")
+                result['text_content'] = ""
+
+        else:
+            # 其他类型暂时只记录
+            result['note'] = f"未处理的类型: {label}"
+            print(f"检测到未处理的类型: {label}")
+
+        processed_results.append(result)
+
+    return processed_results
 
 
 def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dict]:
@@ -35,13 +219,20 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
         # 处理检测结果
         # page_results = []
         for res in output:
+            # 获取版面识别的boxes信息
+            layout_boxes = res['boxes']
+
+            # 根据不同类型处理各个区域
+            processed_regions = process_layout_regions(image_path, layout_boxes)
+
             # 将检测结果转换为字典格式
             result_dict = {
                 'page_number': i + 1,
                 'image_path': image_path,
-                'layout_info': res['boxes']
+                'layout_info': layout_boxes,
+                'processed_results': processed_regions
             }
-            # page_results.append(result_dict)
+            page_results.append(result_dict)
 
             # 保存结果图片（可选）
             try:
@@ -50,14 +241,14 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
             except:
                 pass
 
-        # all_results.extend(page_results)
+        all_results.extend(page_results)
 
     # 保存所有结果到JSON文件
-    # json_output_path = os.path.join(output_folder, "layout_results.json")
-    # with open(json_output_path, 'w', encoding='utf-8') as f:
-    #     json.dump(all_results, f, ensure_ascii=False, indent=2)
+    json_output_path = os.path.join(output_folder, "layout_results.json")
+    with open(json_output_path, 'w', encoding='utf-8') as f:
+        json.dump(all_results, f, ensure_ascii=False, indent=2)
 
-    # print(f"版面识别完成！结果已保存到: {json_output_path}")
+    print(f"版面识别和文本处理完成！结果已保存到: {json_output_path}")
     return all_results
 
 
