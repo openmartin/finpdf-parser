@@ -1,87 +1,17 @@
 import pymupdf  # PyMuPDF
 import os
 import json
+import logging
 from typing import List
 from paddleocr import LayoutDetection, PaddleOCR
 
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 
-def process_layout_results(layout_results: List[dict]) -> List[dict]:
-    """
-    根据版面识别结果，对不同类型的区域进行相应处理
-
-    Args:
-        layout_results: 版面识别的boxes结果
-
-    Returns:
-        处理后的结果列表
-    """
-    # 初始化OCR引擎（只需要中文和英文）
-    ocr = PaddleOCR(use_angle_cls=False, lang="en")
-
-    processed_results = []
-
-    for page_result in layout_results:
-        image_path = page_result['image_path']
-        for box_info in page_result['layout_info']:
-            label = box_info['label']
-            coordinate = box_info['coordinate']
-            result = {
-                'label': label,
-                'coordinate': coordinate,
-                'score': box_info['score']
-            }
-            # 根据不同类型进行处理
-            if label in ['text', 'doc_title', 'paragraph_title', 'figure_title', 'vision_footnote', 'footnote']:
-                # 对文本区域进行OCR识别
-                try:
-                    # 提取区域坐标
-                    x1, y1, x2, y2 = coordinate
-
-                    # 使用PaddleOCR进行文本识别
-                    ocr_result = ocr.ocr(image_path, det=True, rec=True, cls=True)
-
-                    # 筛选出在当前区域内的文本
-                    region_texts = []
-                    if ocr_result and ocr_result[0]:
-                        for line in ocr_result[0]:
-                            if len(line) >= 2:
-                                # 获取文本框坐标
-                                text_box = line[0]
-                                text_content = line[1][0] if line[1] else ""
-
-                                # 计算文本框中心点
-                                box_center_x = sum(point[0] for point in text_box) / 4
-                                box_center_y = sum(point[1] for point in text_box) / 4
-
-                                # 检查文本是否在当前区域内
-                                if (x1 <= box_center_x <= x2 and y1 <= box_center_y <= y2):
-                                    region_texts.append(text_content)
-
-                    result['text_content'] = ' '.join(region_texts) if region_texts else ""
-                    print(f"文本区域OCR识别完成，识别到 {len(region_texts)} 个文本片段")
-
-                except Exception as e:
-                    print(f"OCR识别失败: {e}")
-                    result['text_content'] = ""
-
-            elif label == 'table':
-                # 表格区域暂时只标记，后续可以添加专门的表格识别
-                result['note'] = "表格区域，需要专门的表格识别处理"
-                print("检测到表格区域")
-
-            elif label == 'figure':
-                # 图片区域
-                result['note'] = "图片区域"
-                print("检测到图片区域")
-
-            else:
-                # 其他类型暂时只记录
-                result['note'] = f"未处理的类型: {label}"
-                print(f"检测到未处理的类型: {label}")
-
-        processed_results.append(result)
-
-    return processed_results
+logger = logging.getLogger(__name__)
 
 
 def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dict]:
@@ -101,12 +31,12 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
     os.makedirs(output_folder, exist_ok=True)
 
     # 初始化版面检测模型
-    model = LayoutDetection(model_name="PP-DocLayoutV2")
+    model = LayoutDetection(model_name="PP-DocLayoutV2", device="cpu")
 
     all_results = []
 
     for i, image_path in enumerate(image_paths):
-        print(f"正在处理第 {i + 1} 张图片: {image_path}")
+        logger.info(f"正在处理第 {i + 1} 张图片: {image_path}")
 
         # 进行版面检测
         output = model.predict(image_path, batch_size=1, layout_nms=True)
@@ -139,7 +69,7 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
     with open(json_output_path, 'w', encoding='utf-8') as f:
         json.dump(all_results, f, ensure_ascii=False, indent=2)
 
-    print(f"版面识别和文本处理完成！结果已保存到: {json_output_path}")
+    logger.info(f"版面识别和文本处理完成！结果已保存到: {json_output_path}")
     return all_results
 
 
@@ -184,10 +114,10 @@ def pdf_to_images(pdf_path: str, dpi: int = 150, output_folder: str = None) -> L
         pix.save(image_path)
         image_paths.append(image_path)
 
-        print(f"已转换第 {page_num + 1} 页: {image_path}")
+        logger.info(f"已转换第 {page_num + 1} 页: {image_path}")
 
     doc.close()
-    print(f"转换完成！共生成 {len(image_paths)} 张图片")
+    logger.info(f"转换完成！共生成 {len(image_paths)} 张图片")
     return image_paths
 
 
@@ -199,16 +129,16 @@ if __name__ == '__main__':
         try:
             # 使用默认DPI (150)
             images = pdf_to_images(pdf_file, dpi=150, output_folder='output')
-            print(f"生成的图片文件: {images}")
+            logger.info(f"生成的图片文件: {images}")
 
             # 进行版面识别
             if images:
-                print("\n开始进行版面识别...")
+                logger.info("\n开始进行版面识别...")
                 layout_results = detect_layout(images, output_folder='output')
-                print(f"版面识别完成，共处理 {len(layout_results)} 个结果")
+                logger.info(f"版面识别完成，共处理 {len(layout_results)} 个结果")
 
         except Exception as e:
-            print(f"处理过程中出现错误: {e}")
+            logger.error(f"处理过程中出现错误: {e}")
     else:
-        print(f"请将PDF文件放在当前目录，或修改pdf_file变量指向正确的PDF文件路径")
-        print("示例: pdf_file = 'your_document.pdf'")
+        logger.info(f"请将PDF文件放在当前目录，或修改pdf_file变量指向正确的PDF文件路径")
+        logger.info("示例: pdf_file = 'your_document.pdf'")
