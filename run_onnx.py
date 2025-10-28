@@ -6,38 +6,45 @@ from huggingface_hub import hf_hub_download
 from transformers import AutoConfig, AutoProcessor
 from transformers.image_utils import load_image
 
+os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+# os.environ["HF_HOME"] = "D:\\hf_local"
+# os.environ["HF_HUB_OFFLINE"] = "1"
+# os.environ["HF_HUB_CACHE"] = "D:\\hf_local\\hub"
+# os.environ["TRANSFORMERS_CACHE"]       = r"D:\hf_local\hub"
+# os.environ["HF_HUB_CACHE"]             = r"D:\hf_local\hub"
+# os.environ["HUGGINGFACE_HUB_CACHE"]    = r"D:\hf_local\hub"
 
-os.environ["HF_HOME"] = "D:\\hf_local"
-os.environ["HF_HUB_OFFLINE"] = "1"
-os.environ["HF_HUB_CACHE"] = "D:\\hf_local\\hub"
-os.environ["TRANSFORMERS_CACHE"]       = r"D:\hf_local\hub"
-os.environ["HF_HUB_CACHE"]             = r"D:\hf_local\hub"
-os.environ["HUGGINGFACE_HUB_CACHE"]    = r"D:\hf_local\hub"
+model_id = "Qwen/Qwen2-VL-2B-Instruct"
 
-model_id = "opendatalab/MinerU2.5-2509-1.2B"
+config = AutoConfig.from_pretrained(model_id)
 
-config = AutoConfig.from_pretrained("D:\\hf_local\\hub\\models--opendatalab--MinerU2.5-2509-1.2B\\snapshots\\879e58bdd9566632b27a8a81f0e2961873311f67")
-
-processor = AutoProcessor.from_pretrained("D:\\hf_local\\hub\\models--opendatalab--MinerU2.5-2509-1.2B\\snapshots\\879e58bdd9566632b27a8a81f0e2961873311f67")
+processor = AutoProcessor.from_pretrained(model_id)
 
 # vision_model_path = hf_hub_download(model_id, subfolder="onnx", filename="vision_encoder.onnx",
 #                                     cache_dir="D:\\hf_local\\hub", local_files_only=True)  # graph
-vision_model_path = "model\\onnx\\visual.onnx"
+vision_model_path = "model/onnx/visual.onnx"
 
 # embed_model_path = hf_hub_download(model_id, subfolder="onnx", filename="embed_tokens_fp16.onnx",
 #                                    cache_dir="D:\\hf_local\\hub", local_files_only=True)  # graph
-embed_model_path = "model\\embeddings_bf16.bin"
+embed_model_path = "model/embed_tokens.onnx"
 
 # decoder_model_path = hf_hub_download(model_id, subfolder="onnx", filename="decoder_model_merged.onnx",
 #                                      cache_dir="D:\\hf_local\\hub", local_files_only=True)  # graph
 
-decoder_model_path = "model\\onnx\\llm.onnx"
+decoder_model_path = "model/onnx/llm.onnx"
 
+## Create session options to handle type compatibility
+sess_options = onnxruntime.SessionOptions()
+sess_options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+sess_options.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
+
+## Set provider options to handle potential type issues
+providers = ['CPUExecutionProvider']
 
 ## Load sessions
-vision_session = onnxruntime.InferenceSession(vision_model_path)
-embed_session = onnxruntime.InferenceSession(embed_model_path)
-decoder_session = onnxruntime.InferenceSession(decoder_model_path)
+vision_session = onnxruntime.InferenceSession(vision_model_path, sess_options=sess_options, providers=providers)
+embed_session = onnxruntime.InferenceSession(embed_model_path, sess_options=sess_options, providers=providers)
+decoder_session = onnxruntime.InferenceSession(decoder_model_path, sess_options=sess_options, providers=providers)
 
 ## Set config values
 num_key_value_heads = config.text_config.num_key_value_heads
@@ -63,7 +70,7 @@ messages = [
 
 print("load image")
 image = load_image(
-    "output\\table-001.png"
+    "output\\page_001.png"
 )
 
 # Prepare inputs
