@@ -64,7 +64,7 @@ def parse_raw_bf16(bin_file_path):
     # 根据配置文件，hidden_size = 1536
     # 估计 vocab_size = total_elements // hidden_size
     total_elements = len(fp32_data)
-    hidden_size = 1536  # 从配置文件获取
+    hidden_size = 896  # 从配置文件获取
     vocab_size = total_elements // hidden_size
     
     if vocab_size * hidden_size != total_elements:
