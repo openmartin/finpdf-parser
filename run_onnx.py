@@ -42,7 +42,7 @@ def get_2d_position_ids(grid_thw: np.ndarray):
 
 def build_position_ids_for_onnx(grid_thw: np.ndarray,
                                 text_len: int,
-                                batch_size: int = 1):
+                                batch_size: int):
     """
     一次性生成 ONNX 要的 3-D position_ids
     参数
@@ -181,7 +181,7 @@ for i in range(max_new_tokens):
     grid_thw = inputs["image_grid_thw"]  # (n_images, 3)
     text_len = inputs["input_ids"].shape[1]
     position_ids = build_position_ids_for_onnx(grid_thw, text_len,
-                                               batch_size=3)
+                                               batch_size=inputs['input_ids'].shape[0])
     logits, *present_key_values = decoder_session.run(None, dict(
         inputs_embeds=inputs_embeds,
         attention_mask=attention_mask,
