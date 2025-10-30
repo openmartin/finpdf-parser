@@ -134,16 +134,23 @@ def convert_info_markdown(res, save_folder, img_name):
     for i, region in enumerate(res):
         if not region["res"] and region["type"].lower() != "figure":
             continue
-        img_idx = region["img_idx"]
+        # img_idx = region["img_idx"]
 
-        if region["type"].lower() == "figure":
-            img_file_name = "{}_{}.jpg".format(region["bbox"], img_idx)
-            markdown_string.append(
-                f"""<div align="center">\n\t<img src="{img_name+"/"+img_file_name}">\n</div>"""
-            )
-        elif region["type"].lower() == "title":
+        # if region["type"].lower() == "figure":
+        #     img_file_name = "{}_{}.jpg".format(region["bbox"], img_idx)
+        #     markdown_string.append(
+        #         f"""<div align="center">\n\t<img src="{img_name+"/"+img_file_name}">\n</div>"""
+        #     )
+        if region["type"].lower() == "doc_title":
             markdown_string.append(
                 f"""# {region['res'][0]['text']}"""
+                + "".join(
+                    [" " + one_region["text"] for one_region in region["res"][1:]]
+                )
+            )
+        elif region["type"].lower() == "paragraph_title":
+            markdown_string.append(
+                f"""## {region['res'][0]['text']}"""
                 + "".join(
                     [" " + one_region["text"] for one_region in region["res"][1:]]
                 )
@@ -152,18 +159,20 @@ def convert_info_markdown(res, save_folder, img_name):
             markdown_string.append(region["res"]["html"])
         elif region["type"].lower() == "header" or region["type"].lower() == "footer":
             pass
-        elif region["type"].lower() == "equation" and "latex" in region["res"]:
-            markdown_string.append(f"""$${region["res"]["latex"]}$$""")
+        # elif region["type"].lower() == "equation" and "latex" in region["res"]:
+        #     markdown_string.append(f"""$${region["res"]["latex"]}$$""")
         elif region["type"].lower() == "text":
             merge_func = check_merge_method(region)
             # logger.warning(f"use merge method:{merge_func.__name__}")
             markdown_string.append(replace_special_char(merge_func(region)))
+        elif region["type"].lower() == "footnote" or region["type"].lower() == "vision_footnote" or region["type"].lower() == "figure_title":
+            markdown_string.append(region["res"][0]["text"])
         else:
             string = ""
             for line in region["res"]:
                 string += line["text"] + " "
             markdown_string.append(string)
-
+    print(markdown_string)
     md_path = os.path.join(save_folder, "{}_ocr.md".format(img_name))
     markdown_string = "\n\n".join(markdown_string)
     markdown_string = re.sub(r"\n{3,}", "\n\n", markdown_string)

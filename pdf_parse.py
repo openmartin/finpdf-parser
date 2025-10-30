@@ -1,9 +1,15 @@
+import traceback
+
 import pymupdf  # PyMuPDF
 import os
+from pathlib import Path
 import json
 import logging
 from typing import List
 from paddleocr import LayoutDetection, PaddleOCR
+
+from process_layout_results import process_layout_results
+from recovery_to_markdown import convert_info_markdown
 
 # 配置日志
 logging.basicConfig(
@@ -57,19 +63,20 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
 
             # 保存结果图片（可选）
             try:
-                res.save_to_json(save_path=output_folder)
-                res.save_to_img(save_path=output_folder)
+                save_path = Path(image_path)
+                res.save_to_json(save_path=os.path.join(save_path.parent, save_path.stem + '_layout.json'))
+                res.save_to_img(save_path=os.path.join(save_path.parent, save_path.stem + '_layout.png'))
             except:
                 pass
 
         all_results.extend(page_results)
 
     # 保存所有结果到JSON文件
-    json_output_path = os.path.join(output_folder, "layout_results.json")
-    with open(json_output_path, 'w', encoding='utf-8') as f:
-        json.dump(all_results, f, ensure_ascii=False, indent=2)
+    # json_output_path = os.path.join(output_folder, "layout_results.json")
+    # with open(json_output_path, 'w', encoding='utf-8') as f:
+    #     json.dump(all_results, f, ensure_ascii=False, indent=2)
 
-    logger.info(f"版面识别和文本处理完成！结果已保存到: {json_output_path}")
+    logger.info(f"版面识别和文本处理完成！")
     return all_results
 
 
@@ -136,8 +143,14 @@ if __name__ == '__main__':
                 logger.info("\n开始进行版面识别...")
                 layout_results = detect_layout(images, output_folder='output')
                 logger.info(f"版面识别完成，共处理 {len(layout_results)} 个结果")
+                processed_results = process_layout_results(layout_results, output_folder='output')
+                for page_num, processed_page_result in enumerate(processed_results):
+                    image_name = f"page_{page_num + 1:03d}.png"
+                    convert_info_markdown(processed_page_result, 'output', image_name)
+
 
         except Exception as e:
+            traceback.print_exc()
             logger.error(f"处理过程中出现错误: {e}")
     else:
         logger.info(f"请将PDF文件放在当前目录，或修改pdf_file变量指向正确的PDF文件路径")

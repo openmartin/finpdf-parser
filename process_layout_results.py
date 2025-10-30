@@ -1,9 +1,13 @@
 import logging
+import os
+from pathlib import Path
 from typing import List
 
 import numpy as np
 from PIL import Image
 from paddleocr import PaddleOCR
+
+from table_rec import table_rec_mineru_vl_server
 
 logger = logging.getLogger(__name__)
 
@@ -31,11 +35,17 @@ def process_layout_results(layout_results: List[dict], output_folder: str = None
     processed_results = []
 
     for page_result in layout_results:
+        processed_page_result = []
+
         image_path = page_result['image_path']
         pil_image = Image.open(image_path).convert("RGB")
+
         img_array = np.array(pil_image)
+
         ocr_result = ocr.predict(input=img_array, use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False)
-        text_res = convert_ocr_result(ocr_result)
+        text_res = convert_ocr_result(ocr_result[0])
+        save_path = Path(image_path)
+        ocr_result[0].save_to_json(save_path=os.path.join(save_path.parent, save_path.stem + '_ocr.json'))
         for box_info in page_result['layout_info']:
             label = box_info['label']
             bbox = box_info['coordinate']
@@ -49,9 +59,13 @@ def process_layout_results(layout_results: List[dict], output_folder: str = None
             if label == 'table':
                 # 表格区域暂时只标记，后续可以添加专门的表格识别
                 logger.info("检测到表格区域")
+                cropped = pil_image.crop(bbox)
+                table_html = table_rec_mineru_vl_server(cropped)
+                result['res'] = {'html': table_html}
 
             elif label == 'figure':
                 logger.info("检测到图片区域")
+
 
             elif label == 'equation':
                 logger.info("检测到公式区域")
@@ -59,9 +73,12 @@ def process_layout_results(layout_results: List[dict], output_folder: str = None
             else:
                 logger.info("文本区域")
                 res = filter_text_res(text_res, bbox)
+                result['res'] = res
+                # print(res)
 
-            result['res'] = res
-        processed_results.append(result)
+            processed_page_result.append(result)
+
+        processed_results.append(processed_page_result)
 
     return processed_results
 
