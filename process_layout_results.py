@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from pathlib import Path
@@ -43,7 +44,7 @@ def process_layout_results(layout_results: List[dict], output_folder: str = None
         img_array = np.array(pil_image)
 
         ocr_result = ocr.predict(input=img_array, use_doc_orientation_classify=False, use_doc_unwarping=False, use_textline_orientation=False)
-        text_res = convert_ocr_result(ocr_result[0])
+        text_res = convert_ocr_result(ocr_result[0].json['res'])
         save_path = Path(image_path)
         ocr_result[0].save_to_json(save_path=os.path.join(save_path.parent, save_path.stem + '_ocr.json'))
         for box_info in page_result['layout_info']:
@@ -77,6 +78,10 @@ def process_layout_results(layout_results: List[dict], output_folder: str = None
                 # print(res)
 
             processed_page_result.append(result)
+
+        # 保存到本地
+        with open(os.path.join(os.path.join(save_path.parent, save_path.stem + '_processed.json')), "w", encoding="utf-8") as f:
+            json.dump(processed_page_result, f, ensure_ascii=False, indent=4)
 
         processed_results.append(processed_page_result)
 

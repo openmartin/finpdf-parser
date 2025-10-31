@@ -3,7 +3,6 @@ import traceback
 import pymupdf  # PyMuPDF
 import os
 from pathlib import Path
-import json
 import logging
 from typing import List
 from paddleocr import LayoutDetection, PaddleOCR
@@ -37,7 +36,7 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
     os.makedirs(output_folder, exist_ok=True)
 
     # 初始化版面检测模型
-    model = LayoutDetection(model_name="PP-DocLayoutV2", device="cpu")
+    model = LayoutDetection(model_name="PP-DocLayoutV2", device="cpu", enable_mkldnn=False)
 
     all_results = []
 
@@ -135,7 +134,7 @@ if __name__ == '__main__':
     if os.path.exists(pdf_file):
         try:
             # 使用默认DPI (150)
-            images = pdf_to_images(pdf_file, dpi=150, output_folder='output')
+            images = pdf_to_images(pdf_file, dpi=200, output_folder='output')
             logger.info(f"生成的图片文件: {images}")
 
             # 进行版面识别

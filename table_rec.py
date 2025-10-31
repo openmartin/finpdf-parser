@@ -93,6 +93,72 @@ def image_to_base64(img: Image.Image) -> str:
 
     return base64_str
 
+## result is not good enough
+def table_rec_pp(image: Image.Image):
+    pipeline = TableRecognitionPipelineV2(use_doc_orientation_classify=False, use_doc_unwarping=False, use_layout_detection=False)
+    output = pipeline.predict("output/table_001.png", use_doc_orientation_classify=False, use_doc_unwarping=False, use_layout_detection=False)
+    for res in output:
+        res.print()  ## 打印预测的结构化输出
+        res.save_to_img("output/")
+        res.save_to_xlsx("output/")
+        res.save_to_html("output/")
+        res.save_to_json("output/")
+
+
+## can not run on windows with no GPU
+def table_rec_pp_vl(image: Image.Image):
+    pipeline = PaddleOCRVL(use_doc_orientation_classify=False, use_doc_unwarping=False, use_layout_detection=False, use_chart_recognition=False)
+    output = pipeline.predict("output/table_001.png", prompt_label='table', use_doc_orientation_classify=False, use_doc_unwarping=False, use_layout_detection=False, use_chart_recognition=False)
+    for res in output:
+        res.print()  ## 打印预测的结构化输出
+        res.save_to_json(save_path="output")
+        res.save_to_markdown(save_path="output")
+
+
+def table_rec_mineru_vl_server(image: Image.Image):
+    b64 = image_to_base64(image)
+    data_url = f"data:image/png;base64,{b64}"
+
+    base_url = "http://192.168.100.1:8080/v1"
+    model_name = "MinerU2.5-2509-1.2B"
+
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "\nTable Recognition:"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"{data_url}" # 表格图像
+                    }
+                }
+            ]
+        }
+    ]
+
+    client = openai.OpenAI(
+        api_key="API_KEY",
+        base_url=base_url
+    )
+
+    response = client.chat.completions.create(
+        model = model_name,
+        messages = messages,
+        temperature=0,
+        stream = False,
+        extra_body={"skip_special_tokens": False}
+    )
+
+    # 5. 拿到结果
+    otsl_table = response.choices[0].message.content
+    html_table = convert_otsl_to_html(otsl_table)
+    print(html_table)
+    return html_table
+
 
 if __name__ == "__main__":
     image = Image.open("output/table_001.png")
