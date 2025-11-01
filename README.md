@@ -18,3 +18,22 @@
 python pdf_parse.py --input_file ibm-2q25-earnings-press-release.pdf --output_dir output --api_key xxxx
 ```
 
+
+
+# About This Project
+
+This project aims to identify the most suitable method for parsing English financial statement PDFs by evaluating various OCR tools and models.
+
+For layout analysis, it uses the PP-DocLayoutV2 model from PaddleOCR, and for text recognition, it uses the en-PP-OCRv5 model. These components can be run locally.
+
+However, for more accurate table recognition, a vision model is required. Tables in English financial reports are typically borderless, where PaddleOCR's smaller models are not very effective and often misidentify rows and columns.
+
+For local deployment of a vision model, we recommend [opendatalab/MinerU2.5-2509-1.2B](https://huggingface.co/opendatalab/MinerU2.5-2509-1.2B) or [PaddlePaddle/PaddleOCR-VL](https://huggingface.co/PaddlePaddle/PaddleOCR-VL).
+
+If you don't have a GPU, you can use a cloud-based large model service. By default, this project uses the `qwen3-vl-235b-a22b-instruct` model for table recognition via the Alibaba Cloud API.
+
+## Usage
+
+```shell
+python pdf_parse.py --input_file ibm-2q25-earnings-press-release.pdf --output_dir output --api_key xxxx
+```
