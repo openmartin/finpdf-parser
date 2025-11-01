@@ -10,19 +10,13 @@ from paddleocr import PaddleOCR
 
 from table_rec import table_rec_qwen3_vl
 
-# 获取logger，确保传播到根logger
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)  # 确保级别正确
-logger.propagate = True  # 确保传播到父logger
-
-# 确保有handler可以输出日志
-if not logger.handlers and not logging.getLogger().handlers:
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
-
 
 
 def process_layout_results(layout_results: List[dict], output_folder: str = None) -> List[dict]:

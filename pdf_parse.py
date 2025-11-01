@@ -14,20 +14,8 @@ from recovery_to_markdown import convert_info_markdown
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    force=True  # 强制重新配置，避免被其他模块的配置覆盖
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-
-# 获取根logger并设置级别，确保所有子模块都能使用
-root_logger = logging.getLogger()
-root_logger.setLevel(logging.INFO)
-
-# 确保所有子模块的logger都能传播到根logger
-for handler in root_logger.handlers:
-    handler.setLevel(logging.INFO)
-
-logger = logging.getLogger(__name__)
-logger.info("日志系统初始化完成")
 
 
 def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dict]:
@@ -238,19 +226,6 @@ def main(input_file: str, output_dir: str, api_key: str):
         output_dir: 输出目录路径
         api_key: 大模型API密钥
     """
-    # 确保所有子模块的logger都正确配置
-    import process_layout_results
-    import recovery_to_markdown
-
-    # 显式设置子模块logger级别，确保它们能正确输出日志
-    process_layout_results.logger.setLevel(logging.INFO)
-    process_layout_results.logger.propagate = True
-
-    # 如果recovery_to_markdown模块有logger，也进行设置
-    if hasattr(recovery_to_markdown, 'logger'):
-        recovery_to_markdown.logger.setLevel(logging.INFO)
-        recovery_to_markdown.logger.propagate = True
-
     logger.info("=" * 60)
     logger.info("开始执行PDF解析和转换流程")
     logger.info(f"输入文件: {input_file}")
