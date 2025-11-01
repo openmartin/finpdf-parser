@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from paddleocr import PaddleOCR
 
-from table_rec import table_rec_mineru_vl_server
+from table_rec import table_rec_qwen3_vl
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ def process_layout_results(layout_results: List[dict], output_folder: str = None
                 # 表格区域暂时只标记，后续可以添加专门的表格识别
                 logger.info("检测到表格区域")
                 cropped = pil_image.crop(bbox)
-                table_html = table_rec_mineru_vl_server(cropped)
+                table_html = table_rec_qwen3_vl(cropped)
                 result['res'] = {'html': table_html}
 
             elif label == 'figure':

@@ -15,10 +15,10 @@
 ## 用法
 
 ```shell
-python pdf_parse.py --input_file ibm-2q25-earnings-press-release.pdf --output_dir output --api_key xxxx
+python pdf_parse.py input.pdf ./output your-api-key
 ```
 
-
+第一次运行会下载模型 PP-DocLayoutV2、PP-OCRv5_server_det、en_PP-OCRv5_mobile_rec
 
 # About This Project
 
@@ -35,5 +35,7 @@ If you don't have a GPU, you can use a cloud-based large model service. By defau
 ## Usage
 
 ```shell
-python pdf_parse.py --input_file ibm-2q25-earnings-press-release.pdf --output_dir output --api_key xxxx
+python pdf_parse.py input.pdf ./output your-api-key
 ```
+
+On the first run, the models PP-DocLayoutV2, PP-OCRv5_server_det, and en_PP-OCRv5_mobile_rec will be downloaded.
