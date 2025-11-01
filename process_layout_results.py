@@ -47,7 +47,7 @@ async def process_table_async(cropped_image, page_idx, box_idx, layout_boxes_cou
     """
     异步处理单个表格识别
     """
-    logger.info(f"第 {page_idx} 页：正在进行第 {box_idx}/{layout_boxes_count} 个表格异步识别...")
+    logger.info(f"第 {page_idx} 页：正在进行第 {box_idx}/{layout_boxes_count} bbox 表格异步识别...")
 
     # 使用线程池执行阻塞的表格识别
     loop = asyncio.get_event_loop()
