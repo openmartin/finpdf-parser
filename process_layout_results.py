@@ -23,6 +23,8 @@ if not logger.handlers and not logging.getLogger().handlers:
     console_handler.setFormatter(formatter)
     logger.addHandler(console_handler)
 
+
+
 def process_layout_results(layout_results: List[dict], output_folder: str = None) -> List[dict]:
     """
     根据版面识别结果，对不同类型的区域进行相应处理
