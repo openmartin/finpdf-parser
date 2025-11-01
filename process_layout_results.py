@@ -10,6 +10,12 @@ from paddleocr import PaddleOCR
 
 from table_rec import table_rec_qwen3_vl
 
+# 确保日志配置（如果还没有配置的话）
+if not logging.getLogger().hasHandlers():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
 
 logger = logging.getLogger(__name__)
 
