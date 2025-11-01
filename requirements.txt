@@ -3,3 +3,4 @@ paddlepaddle==3.2.0
 paddlex[ocr]==3.3.5
 openai==2.6.0
 pymupdf==1.26.5
+mineru-vl-utils==0.1.15
