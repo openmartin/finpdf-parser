@@ -10,7 +10,7 @@ from paddleocr import TableRecognitionPipelineV2, PaddleOCRVL
 from otsl2html import convert_otsl_to_html
 
 BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-MODEL_NAME = "Qwen3-VL-235B-A22B-Thinking"
+MODEL_NAME = "qwen3-vl-235b-a22b-instruct"
 
 TABLE_REC_PROMPT ="""
 ## Role
@@ -65,6 +65,7 @@ def table_rec_qwen3_vl(image: Image.Image):
     # 5. 拿到结果
     html_table = response.choices[0].message.content
     print(html_table)
+    return html_table
 
 
 def image_to_base64(img: Image.Image) -> str:
