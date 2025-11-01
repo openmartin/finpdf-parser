@@ -17,6 +17,8 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
+logger = logging.getLogger(__name__)
+
 
 def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dict]:
     """
