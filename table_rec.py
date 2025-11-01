@@ -4,6 +4,9 @@ import time
 
 import openai
 from PIL import Image
+from paddleocr import TableRecognitionPipelineV2, PaddleOCRVL
+
+from otsl2html import convert_otsl_to_html
 
 BASE_URL = "xxx"
 MODEL_NAME = "Qwen3-VL-235B-A22B-Thinking"
@@ -33,7 +36,7 @@ client = openai.OpenAI(
     base_url=BASE_URL
 )
 
-def table_rec(image: Image.Image):
+def table_rec_qwen3_vl(image: Image.Image):
     b64 = image_to_base64(image)
     data_url = f"data:image/png;base64,{b64}"
 
