@@ -1,21 +1,23 @@
-import traceback
-import argparse
-
-import pymupdf  # PyMuPDF
-import os
-from pathlib import Path
 import logging
-from typing import List
-from paddleocr import LayoutDetection, PaddleOCR
-
-from process_layout_results import process_layout_results
-from recovery_to_markdown import convert_info_markdown
 
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+import os
+import traceback
+import argparse
+from typing import List
+from pathlib import Path
+
+import pymupdf  # PyMuPDF
+from paddleocr import LayoutDetection
+
+from process_layout_results import process_layout_results
+from recovery_to_markdown import convert_info_markdown
+
 
 logger = logging.getLogger(__name__)
 
