@@ -3,12 +3,14 @@ import logging
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True
 )
 
 import os
 import traceback
 import argparse
+import multiprocessing
 from typing import List
 from pathlib import Path
 
@@ -20,6 +22,25 @@ from recovery_to_markdown import convert_info_markdown
 
 
 logger = logging.getLogger(__name__)
+
+def reset_logging():
+    """
+    重置日志配置，解决第三方库干扰问题
+    """
+    # 获取根日志器
+    root_logger = logging.getLogger()
+
+    # 清除所有处理器
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+
+    # 重新配置
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[logging.StreamHandler()]
+    )
+
 
 
 def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dict]:
@@ -41,9 +62,14 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
     total_images = len(image_paths)
     logger.info(f"阶段：版面识别 - 开始处理 {total_images} 张图片")
 
+    # 获取系统最大可用CPU线程数
+    cpu_threads = multiprocessing.cpu_count()
+
     # 初始化版面检测模型
     logger.info("阶段：正在初始化版面检测模型 (PP-DocLayoutV2)...")
-    model = LayoutDetection(model_name="PP-DocLayoutV2", device="cpu", enable_mkldnn=False)
+    logger.info(f"使用CPU线程数: {cpu_threads}")
+    model = LayoutDetection(model_name="PP-DocLayoutV2", device="cpu", enable_mkldnn=False, cpu_threads=cpu_threads)
+    reset_logging()
     logger.info("版面检测模型初始化完成")
 
     all_results = []
@@ -54,6 +80,7 @@ def detect_layout(image_paths: List[str], output_folder: str = None) -> List[dic
         # 进行版面检测
         logger.info(f"第 {i + 1} 页：正在进行版面检测...")
         output = model.predict(image_path, batch_size=1, layout_nms=True)
+        reset_logging()
 
         # 处理检测结果
         page_results = []
@@ -266,6 +293,8 @@ def main(input_file: str, output_dir: str, api_key: str):
             logger.info("=" * 40)
             logger.info("第3阶段：布局结果处理")
             logger.info("=" * 40)
+            # 重置日志配置，确保后续日志正常输出
+            reset_logging()
             processed_results = process_layout_results(layout_results, output_folder=output_dir)
             logger.info(f"布局结果处理完成，共处理 {len(processed_results)} 个页面")
 
