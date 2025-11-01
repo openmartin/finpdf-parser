@@ -172,7 +172,6 @@ def convert_info_markdown(res, save_folder, img_name):
             for line in region["res"]:
                 string += line["text"] + " "
             markdown_string.append(string)
-    print(markdown_string)
     md_path = os.path.join(save_folder, "{}_ocr.md".format(img_name))
     markdown_string = "\n\n".join(markdown_string)
     markdown_string = re.sub(r"\n{3,}", "\n\n", markdown_string)

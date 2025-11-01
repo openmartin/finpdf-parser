@@ -128,6 +128,63 @@ def pdf_to_images(pdf_path: str, dpi: int = 150, output_folder: str = None) -> L
     return image_paths
 
 
+def combine_markdown_files(output_dir: str, input_file: str) -> str:
+    """
+    合并所有生成的markdown文件为一个完整的markdown文档
+
+    Args:
+        output_dir: 输出目录路径
+        input_file: 原始PDF文件路径
+
+    Returns:
+        合并后的markdown文件路径
+    """
+    # 获取PDF文件名（不含扩展名）作为最终文件名
+    pdf_name = Path(input_file).stem
+    combined_md_path = os.path.join(output_dir, f"{pdf_name}_complete.md")
+
+    # 查找所有生成的markdown文件
+    md_files = []
+    for file_name in os.listdir(output_dir):
+        if file_name.endswith("_ocr.md"):
+            md_files.append(os.path.join(output_dir, file_name))
+
+    # 按文件名排序确保页面顺序正确
+    md_files.sort()
+
+    if not md_files:
+        logger.warning("没有找到需要合并的markdown文件")
+        return None
+
+    # 合并所有markdown文件
+    combined_content = []
+
+    for md_file in md_files:
+        try:
+            with open(md_file, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+
+            if content:
+                combined_content.append(content)
+
+        except Exception as e:
+            logger.error(f"读取文件 {md_file} 时出错: {e}")
+            continue
+
+    # 写入合并后的markdown文件
+    try:
+        with open(combined_md_path, 'w', encoding='utf-8') as f:
+            f.write('\n\n'.join(combined_content))
+
+        logger.info(f"所有markdown文件已合并为: {combined_md_path}")
+        logger.info(f"共合并了 {len(md_files)} 个页面的内容")
+        return combined_md_path
+
+    except Exception as e:
+        logger.error(f"写入合并文件时出错: {e}")
+        return None
+
+
 def main(input_file: str, output_dir: str, api_key: str):
     """
     主处理函数
@@ -162,6 +219,14 @@ def main(input_file: str, output_dir: str, api_key: str):
             for page_num, processed_page_result in enumerate(processed_results):
                 image_name = f"page_{page_num + 1:03d}.png"
                 convert_info_markdown(processed_page_result, output_dir, image_name)
+
+            # 合并所有markdown文件
+            logger.info("\n开始合并markdown文件...")
+            combined_file = combine_markdown_files(output_dir, input_file)
+            if combined_file:
+                logger.info("markdown文件合并完成！")
+            else:
+                logger.warning("markdown文件合并失败")
 
         logger.info("PDF解析和转换完成！")
         return True
